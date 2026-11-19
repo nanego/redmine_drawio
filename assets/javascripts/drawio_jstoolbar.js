@@ -184,6 +184,38 @@
     }
 
     /**
+     * Add buttons to the toolbar of the redmine_wysiwyg_editor plugin with
+     * TinyMCE 5+, where buttons must be registered before the editor is rendered.
+     */
+    function registerWysiwygExtension() {
+        var buttons = [
+            {name: 'drawio_attach', enabled: true},
+            {name: 'drawio_dmsf'  , enabled: Drawio.settings.DMSF}
+        ].filter(function(b) { return b.enabled; });
+
+        (window.RedmineWysiwygEditorExtensions = window.RedmineWysiwygEditorExtensions || []).push({
+            toolbar: buttons.map(function(b) { return b.name; }).join(' '),
+            setup: function(editor) {
+                buttons.forEach(function(b) {
+                    var url = cssBackgroundUrl('jstb_'+b.name);
+
+                    if(url)
+                        editor.ui.registry.addIcon(b.name, '<svg width="24" height="24"><image href="'+url+'" x="4" y="4" width="16" height="16"/></svg>');
+
+                    editor.ui.registry.addButton(b.name, {
+                        icon    : url ? b.name : undefined,
+                        text    : url ? undefined : 'Drawio',
+                        tooltip : Drawio.strings[b.name+'_title'],
+                        onAction: function() {
+                            openMacroDialog(dlg, getTinymceEditorAdapter(editor), b.name);
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+    /**
      * Add buttons to the TinyMCE 4 toolbar when editor is running.
      */
     function updateTinyMCEToolbar() {
@@ -382,6 +414,10 @@
         if(typeof tinymce !== 'undefined' && tinymce.majorVersion === '4')
             updateTinyMCEToolbar();
     });
+
+    // Support for the redmine_wysiwyg_editor plugin 0.100+ (TinyMCE 5+);
+    // registered now, as the editor may be created before the document is ready
+    registerWysiwygExtension();
     
     // Initialize the jsToolBar object; called explicitly after the jsToolBar has been created
     Drawio.initToolbar = function() {
